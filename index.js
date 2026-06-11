@@ -23,34 +23,41 @@ const db = mysql.createConnection({
   database: 'webshop'
 })
 
-db.connect(err => {
-  if (err) {
-    console.error('DB接続エラー:', err)
-    return
-  }
-  console.log('DB接続成功！')
-})
+// db.connect(err => {
+//   if (err) {
+//     console.error('DB接続エラー:', err)
+//     return
+//   }
+//   console.log('DB接続成功！')
+// })
 
+// app.post('/login', (req, res) => {
+//   const { email, password } = req.body
+
+//   db.query(
+//     'SELECT * FROM m_user WHERE mail_address = ? AND password = ?',
+//     [email, password],
+//     (err, results) => {
+//       if (err) {
+//         return res.status(500).json(err)
+//       }
+
+//       if (results.length === 0) {
+//         return res.status(401).json({ message: 'ログイン失敗' })
+//       }
+
+//       // ✅ 成功
+//       res.json(results[0])
+//     }
+//   )
+// })
 app.post('/login', (req, res) => {
-  const { email, password } = req.body
-
-  db.query(
-    'SELECT * FROM m_user WHERE mail_address = ? AND password = ?',
-    [email, password],
-    (err, results) => {
-      if (err) {
-        return res.status(500).json(err)
-      }
-
-      if (results.length === 0) {
-        return res.status(401).json({ message: 'ログイン失敗' })
-      }
-
-      // ✅ 成功
-      res.json(results[0])
-    }
-  )
+  res.json({
+    user_id: 1,
+    name: "テストユーザー"
+  })
 })
+
 
 app.post('/register', (req, res) => {
   const {
@@ -95,12 +102,18 @@ app.post('/register', (req, res) => {
 })
 
 app.get('/products', (req, res) => {
-  db.query('SELECT * FROM m_product', (err, results) => {
-    if (err) {
-      return res.status(500).json(err)
-    }
-    res.json(results)
-  })
+  // db.query('SELECT * FROM m_product', (err, results) => {
+  //   if (err) {
+  //     return res.status(500).json(err)
+  //   }
+  //   res.json(results)
+  // })
+  
+res.json([
+    { id: 1, name: "テスト商品A", price: 1000 },
+    { id: 2, name: "テスト商品B", price: 2000 }
+  ])
+
 })
 
 // 商品データを外部APIから取得してDBに入れる
