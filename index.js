@@ -101,19 +101,19 @@ app.post('/register', (req, res) => {
   )
 })
 
-app.get('/products', (req, res) => {
+// app.get('/products', (req, res) => {
   // db.query('SELECT * FROM m_product', (err, results) => {
   //   if (err) {
   //     return res.status(500).json(err)
   //   }
   //   res.json(results)
   // })
-  
-res.json([
+// })
+app.get('/products', (req, res) => {
+  res.json([
     { id: 1, name: "テスト商品A", price: 1000 },
     { id: 2, name: "テスト商品B", price: 2000 }
   ])
-
 })
 
 // 商品データを外部APIから取得してDBに入れる
