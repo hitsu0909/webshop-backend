@@ -14,14 +14,14 @@ app.listen(3000, () => {
   console.log('Server running on port 3000')
 })
 
-const mysql = require('mysql2')
+// const mysql = require('mysql2')
 
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '1710SG',
-  database: 'webshop'
-})
+// const db = mysql.createConnection({
+//   host: 'localhost',
+//   user: 'root',
+//   password: '1710SG',
+//   database: 'webshop'
+// })
 
 // db.connect(err => {
 //   if (err) {
