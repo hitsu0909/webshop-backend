@@ -10,6 +10,10 @@ app.get('/test', (req, res) => {
   res.json({ message: 'Backend OK' })
 })
 
+app.get('/', (req, res) => {
+  res.send('API running')
+})
+
 app.listen(3000, () => {
   console.log('Server running on port 3000')
 })
