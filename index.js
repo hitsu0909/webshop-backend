@@ -47,13 +47,16 @@ db.connect(err => {
   console.log('DB接続成功！')
 })
 
-app.post('/login', (req, res) => {
+const bcrypt = require('bcrypt')
+
+app.post('/login', async (req, res) => {
   const { email, password } = req.body
 
   db.query(
-    'SELECT * FROM m_user WHERE mail_address = ? AND password = ?',
-    [email, password],
-    (err, results) => {
+    'SELECT * FROM m_user WHERE mail_address = ?',
+    [email],
+    async (err, results) => {
+
       if (err) {
         return res.status(500).json(err)
       }
@@ -62,20 +65,43 @@ app.post('/login', (req, res) => {
         return res.status(401).json({ message: 'ログイン失敗' })
       }
 
-      // ✅ 成功
-      res.json(results[0])
+      const user = results[0]
+
+      // ✅ 判定：ハッシュかどうか
+      if (user.password.startsWith('$2b$')) {
+
+        // 🔒 すでにハッシュ
+        const match = await bcrypt.compare(password, user.password)
+
+        if (!match) {
+          return res.status(401).json({ message: 'ログイン失敗' })
+        }
+
+        return res.json(user)
+
+      } else {
+
+        // ✅ 平文（旧データ）
+        if (password !== user.password) {
+          return res.status(401).json({ message: 'ログイン失敗' })
+        }
+
+        // ✅ 初回ログイン成功 → ハッシュ化
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        db.query(
+          'UPDATE m_user SET password = ? WHERE user_id = ?',
+          [hashedPassword, user.user_id]
+        )
+
+        return res.json(user)
+      }
     }
   )
 })
-// app.post('/login', (req, res) => {
-//   res.json({
-//     user_id: 1,
-//     name: "テストユーザー"
-//   })
-// })
 
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const {
     company_name,
     company_kana,
@@ -89,32 +115,41 @@ app.post('/register', (req, res) => {
     password
   } = req.body
 
-  db.query(
-    `INSERT INTO m_user 
-    (company_name, company_kana, user_name, user_kana, department,
-     postal_code, address, mail_address, phone, password)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      company_name,
-      company_kana,
-      user_name,
-      user_kana,
-      department,
-      postal_code,
-      address,
-      email,
-      phone,
-      password
-    ],
-    (err) => {
-      if (err) {
-        console.error(err)
-        return res.status(500).json({ message: '登録失敗' })
-      }
+  try {
+    // ✅ ハッシュ化
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-      res.json({ message: '登録成功' })
-    }
-  )
+    db.query(
+      `INSERT INTO m_user 
+      (company_name, company_kana, user_name, user_kana, department,
+       postal_code, address, mail_address, phone, password)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        company_name,
+        company_kana,
+        user_name,
+        user_kana,
+        department,
+        postal_code,
+        address,
+        email,
+        phone,
+        hashedPassword // ✅ ここ重要🔥
+      ],
+      (err) => {
+        if (err) {
+          console.error(err)
+          return res.status(500).json({ message: '登録失敗' })
+        }
+
+        res.json({ message: '登録成功' })
+      }
+    )
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'サーバーエラー' })
+  }
 })
 
 app.get('/products', (req, res) => {
