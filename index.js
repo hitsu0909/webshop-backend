@@ -249,7 +249,7 @@ app.get('/products/:id', (req, res) => {
   )
 })
 
-app.put('/user/:id', (req, res) => {
+app.put('/user/:id', async (req, res) => {
   const { id } = req.params
 
   const {
@@ -265,38 +265,85 @@ app.put('/user/:id', (req, res) => {
     password
   } = req.body
 
-  db.query(
-    `UPDATE m_user SET
-      company_name = ?,
-      company_kana = ?,
-      user_name = ?,
-      user_kana = ?,
-      department = ?,
-      postal_code = ?,
-      address = ?,
-      mail_address = ?,
-      phone = ?,
-      password = ?
-     WHERE user_id = ?`,
-    [
-      company_name,
-      company_kana,
-      user_name,
-      user_kana,
-      department,
-      postal_code,
-      address,
-      email,
-      phone,
-      password,
-      id
-    ],
-    (err) => {
-      if (err) return res.status(500).json(err)
-      res.json({ message: '更新成功' })
+  try {
+
+    // ✅ パスワードある場合（変更あり）
+    if (password) {
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+
+      db.query(
+        `UPDATE m_user SET
+          company_name = ?,
+          company_kana = ?,
+          user_name = ?,
+          user_kana = ?,
+          department = ?,
+          postal_code = ?,
+          address = ?,
+          mail_address = ?,
+          phone = ?,
+          password = ?
+         WHERE user_id = ?`,
+        [
+          company_name,
+          company_kana,
+          user_name,
+          user_kana,
+          department,
+          postal_code,
+          address,
+          email,
+          phone,
+          hashedPassword, // ✅ ハッシュ（重要🔥）
+          id
+        ],
+        (err) => {
+          if (err) return res.status(500).json(err)
+          res.json({ message: '更新成功（password含む）' })
+        }
+      )
+
+    } else {
+
+      // ✅ パスワード未変更
+      db.query(
+        `UPDATE m_user SET
+          company_name = ?,
+          company_kana = ?,
+          user_name = ?,
+          user_kana = ?,
+          department = ?,
+          postal_code = ?,
+          address = ?,
+          mail_address = ?,
+          phone = ?
+         WHERE user_id = ?`,
+        [
+          company_name,
+          company_kana,
+          user_name,
+          user_kana,
+          department,
+          postal_code,
+          address,
+          email,
+          phone,
+          id
+        ],
+        (err) => {
+          if (err) return res.status(500).json(err)
+          res.json({ message: '更新成功（password変更なし）' })
+        }
+      )
     }
-  )
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'サーバエラー' })
+  }
 })
+
 
 app.get('/cart/:userId', (req, res) => {
   const { userId } = req.params
