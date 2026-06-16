@@ -116,33 +116,55 @@ app.post('/register', async (req, res) => {
   } = req.body
 
   try {
-    // ✅ ハッシュ化
-    const hashedPassword = await bcrypt.hash(password, 10)
 
+    // ✅ ① メール重複チェック（最重要🔥）
     db.query(
-      `INSERT INTO m_user 
-      (company_name, company_kana, user_name, user_kana, department,
-       postal_code, address, mail_address, phone, password)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        company_name,
-        company_kana,
-        user_name,
-        user_kana,
-        department,
-        postal_code,
-        address,
-        email,
-        phone,
-        hashedPassword // ✅ ここ重要🔥
-      ],
-      (err) => {
+      'SELECT user_id FROM m_user WHERE mail_address = ?',
+      [email],
+      async (err, results) => {
+
         if (err) {
           console.error(err)
-          return res.status(500).json({ message: '登録失敗' })
+          return res.status(500).json({ message: 'DBエラー' })
         }
 
-        res.json({ message: '登録成功' })
+        // ✅ 重複あり
+        if (results.length > 0) {
+          return res.status(400).json({
+            message: 'このメールアドレスは既に登録されています'
+          })
+        }
+
+        // ✅ ② パスワードハッシュ
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        // ✅ ③ 登録
+        db.query(
+          `INSERT INTO m_user 
+          (company_name, company_kana, user_name, user_kana, department,
+           postal_code, address, mail_address, phone, password)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            company_name,
+            company_kana,
+            user_name,
+            user_kana,
+            department,
+            postal_code,
+            address,
+            email,
+            phone,
+            hashedPassword
+          ],
+          (err) => {
+            if (err) {
+              console.error(err)
+              return res.status(500).json({ message: '登録失敗' })
+            }
+
+            res.json({ message: '登録成功' })
+          }
+        )
       }
     )
 
