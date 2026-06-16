@@ -289,76 +289,96 @@ app.put('/user/:id', async (req, res) => {
 
   try {
 
-    // ✅ パスワードある場合（変更あり）
-    if (password) {
+    // ✅ ① メール重複チェック（最重要🔥）
+    db.query(
+      'SELECT user_id FROM m_user WHERE mail_address = ? AND user_id != ?',
+      [email, id],
+      async (err, results) => {
 
-      const hashedPassword = await bcrypt.hash(password, 10)
-
-      db.query(
-        `UPDATE m_user SET
-          company_name = ?,
-          company_kana = ?,
-          user_name = ?,
-          user_kana = ?,
-          department = ?,
-          postal_code = ?,
-          address = ?,
-          mail_address = ?,
-          phone = ?,
-          password = ?
-         WHERE user_id = ?`,
-        [
-          company_name,
-          company_kana,
-          user_name,
-          user_kana,
-          department,
-          postal_code,
-          address,
-          email,
-          phone,
-          hashedPassword, // ✅ ハッシュ（重要🔥）
-          id
-        ],
-        (err) => {
-          if (err) return res.status(500).json(err)
-          res.json({ message: '更新成功（password含む）' })
+        if (err) {
+          console.error(err)
+          return res.status(500).json({ message: 'DBエラー' })
         }
-      )
 
-    } else {
-
-      // ✅ パスワード未変更
-      db.query(
-        `UPDATE m_user SET
-          company_name = ?,
-          company_kana = ?,
-          user_name = ?,
-          user_kana = ?,
-          department = ?,
-          postal_code = ?,
-          address = ?,
-          mail_address = ?,
-          phone = ?
-         WHERE user_id = ?`,
-        [
-          company_name,
-          company_kana,
-          user_name,
-          user_kana,
-          department,
-          postal_code,
-          address,
-          email,
-          phone,
-          id
-        ],
-        (err) => {
-          if (err) return res.status(500).json(err)
-          res.json({ message: '更新成功（password変更なし）' })
+        if (results.length > 0) {
+          return res.status(400).json({
+            message: 'このメールアドレスは既に使用されています'
+          })
         }
-      )
-    }
+
+        // ✅ ② パスワードあり
+        if (password) {
+
+          const hashedPassword = await bcrypt.hash(password, 10)
+
+          db.query(
+            `UPDATE m_user SET
+              company_name = ?,
+              company_kana = ?,
+              user_name = ?,
+              user_kana = ?,
+              department = ?,
+              postal_code = ?,
+              address = ?,
+              mail_address = ?,
+              phone = ?,
+              password = ?
+             WHERE user_id = ?`,
+            [
+              company_name,
+              company_kana,
+              user_name,
+              user_kana,
+              department,
+              postal_code,
+              address,
+              email,
+              phone,
+              hashedPassword,
+              id
+            ],
+            (err) => {
+              if (err) return res.status(500).json(err)
+              res.json({ message: '更新成功（password含む）' })
+            }
+          )
+
+        } else {
+
+          // ✅ ③ パスワードなし
+          db.query(
+            `UPDATE m_user SET
+              company_name = ?,
+              company_kana = ?,
+              user_name = ?,
+              user_kana = ?,
+              department = ?,
+              postal_code = ?,
+              address = ?,
+              mail_address = ?,
+              phone = ?
+             WHERE user_id = ?`,
+            [
+              company_name,
+              company_kana,
+              user_name,
+              user_kana,
+              department,
+              postal_code,
+              address,
+              email,
+              phone,
+              id
+            ],
+            (err) => {
+              if (err) return res.status(500).json(err)
+              res.json({ message: '更新成功（password変更なし）' })
+            }
+          )
+        }
+
+      }
+    )
 
   } catch (err) {
     console.error(err)
